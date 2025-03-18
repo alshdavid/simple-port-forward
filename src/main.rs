@@ -3,7 +3,6 @@ mod config;
 mod tcp_proxy;
 
 use config::Config;
-use config::ConfigProto;
 
 fn main() -> anyhow::Result<()> {
   tokio::runtime::Builder::new_multi_thread()
@@ -22,18 +21,24 @@ async fn main_async() -> anyhow::Result<()> {
 
   println!("Bindings:");
 
-  for binding in config.binding {
-    println!(
-      "  [{}] {} -> {}",
-      binding.protocol, binding.target, binding.bind
-    );
-    tasks.push(tokio::spawn(async move {
-      match binding.protocol {
-        ConfigProto::TCP => tcp_proxy::tcp_proxy(binding.target, binding.bind).await,
-        ConfigProto::UDP => todo!(),
-        ConfigProto::HTTP => todo!(),
-      }
-    }));
+  for binding in config.tcp {
+    println!("  [TCP] {} -> {}", binding.bind, binding.target);
+    tasks.push(tokio::spawn(tcp_proxy::tcp_proxy(
+      binding.target,
+      binding.bind,
+    )));
+  }
+
+  for binding in config.udp {
+    println!("  [UDP] {} -> {} TODO", binding.bind, binding.target);
+  }
+
+  for binding in config.http {
+    println!("  [HTTP] {} -> {} TODO", binding.bind, binding.target);
+  }
+
+  for binding in config.https {
+    println!("  [HTTPS] {} -> {} TODO", binding.bind, binding.target);
   }
 
   for task in tasks {
