@@ -12,19 +12,38 @@ pub async fn tcp_proxy(
     let (client, _) = listener.accept().await?;
     let target_address = target_address.clone();
 
-    tokio::spawn(async move {
-      let server = TcpStream::connect(target_address).await.unwrap();
+    tokio::spawn({
+      let target_address = target_address.clone();
 
-      let (mut eread, mut ewrite) = client.into_split();
-      let (mut oread, mut owrite) = server.into_split();
+      async move {
+        let Ok(server) = TcpStream::connect(&target_address).await else {
+          eprintln!("Error connecting to: {}", target_address);
+          return;
+        };
 
-      tokio::spawn(async move {
-        io::copy(&mut eread, &mut owrite).await.unwrap();
-      });
+        let (mut eread, mut ewrite) = client.into_split();
+        let (mut oread, mut owrite) = server.into_split();
 
-      tokio::spawn(async move {
-        io::copy(&mut oread, &mut ewrite).await.unwrap();
-      });
+        tokio::spawn({
+          let target_address = target_address.clone();
+          async move {
+            if io::copy(&mut eread, &mut owrite).await.is_err() {
+              eprintln!("Error copying to: {}", target_address);
+              return;
+            };
+          }
+        });
+
+        tokio::spawn({
+          let target_address = target_address.clone();
+          async move {
+            if io::copy(&mut oread, &mut ewrite).await.is_err() {
+              eprintln!("Error copying from: {}", target_address);
+              return;
+            };
+          }
+        });
+      }
     });
   }
 }

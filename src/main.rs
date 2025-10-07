@@ -1,6 +1,7 @@
 mod cli;
 mod config;
 mod tcp_proxy;
+mod udp_proxy;
 
 use config::Config;
 
@@ -30,7 +31,11 @@ async fn main_async() -> anyhow::Result<()> {
   }
 
   for binding in config.udp {
-    println!("  [UDP] {} -> {} TODO", binding.bind, binding.target);
+    println!("  [UDP] {} -> {}", binding.bind, binding.target);
+    tasks.push(tokio::spawn(udp_proxy::udp_proxy(
+      binding.target,
+      binding.bind,
+    )))
   }
 
   for binding in config.http {
