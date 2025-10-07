@@ -29,8 +29,7 @@ pub async fn tcp_proxy(
           async move {
             if io::copy(&mut eread, &mut owrite).await.is_err() {
               eprintln!("Error copying to: {}", target_address);
-              return;
-            };
+            }
           }
         });
 
@@ -39,8 +38,7 @@ pub async fn tcp_proxy(
           async move {
             if io::copy(&mut oread, &mut ewrite).await.is_err() {
               eprintln!("Error copying from: {}", target_address);
-              return;
-            };
+            }
           }
         });
       }
